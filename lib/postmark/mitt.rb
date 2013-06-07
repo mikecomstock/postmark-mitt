@@ -72,6 +72,28 @@ module Postmark
       source["ReplyTo"]
     end
 
+    # See http://stackoverflow.com/a/7376064
+    def reply_text(from_address)
+      address = from_address
+      text = source["TextBody"]
+      regex_arr = [
+        Regexp.new("From:\s*" + Regexp.escape(address), Regexp::IGNORECASE),
+        Regexp.new("<" + Regexp.escape(address) + ">", Regexp::IGNORECASE),
+        Regexp.new(Regexp.escape(address) + "\s+wrote:", Regexp::IGNORECASE),
+        Regexp.new("^.*On.*(\n)?wrote:$", Regexp::IGNORECASE),
+        Regexp.new("-+original\s+message-+\s*$", Regexp::IGNORECASE),
+        Regexp.new("from:\s*$", Regexp::IGNORECASE)
+      ]
+
+      text_length = text.length
+      #calculates the matching regex closest to top of page
+      index = regex_arr.inject(text_length) do |min, regex|
+        [(text.index(regex) || text_length), min].min
+      end
+
+      text[0, index].strip
+    end
+
     def html_body
       source["HtmlBody"]
     end
